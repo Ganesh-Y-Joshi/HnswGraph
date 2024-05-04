@@ -1,5 +1,3 @@
-package org.joshi.gyj.hnsw;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -89,6 +87,44 @@ public class HnswGraph {
             }
             return Optional.of(new VectorNode(cNode, minCost));
         }
+
+        public Optional<VectorNode> findMinCostBinary(List<Double> vector) {
+            if (vector.isEmpty()) {
+                return Optional.empty();
+            }
+
+            int high = hnsSet.size() - 1;
+            int low = 0;
+
+            var nodes = hnsSet.stream().toList();
+
+            while (low <= high) {
+                int mid = (low + high) /2;
+                if (mid == 0) {
+                    return Optional.of(new VectorNode(nodes.get(mid).vector(),
+                            calculateCost(vector, nodes.get(mid).vector())));
+                }
+
+                if (mid == high) {
+                    return Optional.of(new VectorNode(nodes.get(mid).vector(),
+                            calculateCost(vector, nodes.get(mid).vector())));
+                }
+
+                double midCost = calculateCost(nodes.get(mid).vector(), vector);
+                double midRCost = calculateCost(nodes.get(mid + 1).vector(), vector);
+                double midLCost = calculateCost(nodes.get(mid - 1).vector(), vector);
+
+                if (midCost <= midRCost && midCost <= midLCost) {
+                    return Optional.of(new VectorNode(nodes.get(mid).vector(), midCost));
+                } else if (midRCost >= midCost) {
+                    high = mid - 1;
+                } else {
+                    low = mid + 1;
+                }
+            }
+
+            return Optional.empty();
+        }
         
         public double calculateCost(List<Double> v1, List<Double> v2) {
             if (v1.size() != v2.size()) {
@@ -177,7 +213,7 @@ public class HnswGraph {
             }
         }
 
-        return graph.get(minIdx).findMinCost(vector);
+        return graph.get(minIdx).findMinCostBinary(vector);
     }
 
     private boolean areAllNodeFilled() {
@@ -192,12 +228,20 @@ public class HnswGraph {
         List<Double> vector2 = Arrays.asList(4.0, 5.0, 6.0);
         List<Double> vector3 = Arrays.asList(7.0, 8.0, 9.0);
         List<Double> vector4 = Arrays.asList(0.0, 0.0, 0.0);
+        List<Double> vector5 = Arrays.asList(1.1, 2.0, 3.0);
+        List<Double> vector6 = Arrays.asList(4.0, 5.7, 6.0);
+        List<Double> vector7 = Arrays.asList(7.0, 8.3, 9.0);
+        List<Double> vector8 = Arrays.asList(0.0, 0.5, 3.0);
 
         // Add test vectors to the graph
         hnswGraph.addNode(vector1);
         hnswGraph.addNode(vector2);
         hnswGraph.addNode(vector3);
         hnswGraph.addNode(vector4);
+        hnswGraph.addNode(vector5);
+        hnswGraph.addNode(vector6);
+        hnswGraph.addNode(vector7);
+        hnswGraph.addNode(vector8);
 
         // Test query vectors
         List<Double> queryVector1 = Arrays.asList(0.9, 2.0, 2.8);
@@ -207,6 +251,5 @@ public class HnswGraph {
         // Perform queries
         System.out.println("Nearest neighbor for queryVector1: " + hnswGraph.findMin(queryVector1));
         System.out.println("Nearest neighbor for queryVector2: " + hnswGraph.findMin(queryVector2));
-        System.out.println("Nearest neighbor for queryVector3: " + hnswGraph.findMin(queryVector3));
-    }
+        System.out.println("Nearest neighbor for queryVector3: " + hnswGraph.findMin(queryVector3));}
 }
